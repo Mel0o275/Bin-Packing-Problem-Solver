@@ -1,0 +1,282 @@
+import tkinter as tk
+from tkinter import ttk
+
+# ======================= Tkinter Setup ======================
+root = tk.Tk()
+root.title("Bin Packing")
+root.geometry("500x550")
+root.configure(bg="#f0f4f7")
+root.resizable(False, False)
+screen_width = root.winfo_screenwidth()
+screen_height = root.winfo_screenheight()
+# Make Window Centered
+window_width = 500
+window_height = 550
+x = (screen_width // 2) - (window_width // 2)
+y = (screen_height // 2) - (window_height // 2)
+root.geometry(f"{window_width}x{window_height}+{x}+{y}")
+
+style = ttk.Style()
+style.theme_use('default')
+style.configure('TNotebook.Tab', font=('Helvetica', 10, 'bold'), padding=[10, 5])
+style.configure('TNotebook', background='#f0f4f7', borderwidth=0)
+style.map('TNotebook.Tab', background=[('selected', '#d1e7dd')])
+
+# ======================= Title =============================
+label = tk.Label(root, text="Welcome to the Bin Packing Application",
+                    font=("Helvetica", 14, "bold"), bg="#f0f4f7", fg="#0d3b66")
+label.pack(pady=20)
+
+# ======================= Tabs ==============================
+tab = ttk.Notebook(root)
+tab.pack(expand=True, fill='both', padx=10, pady=5)
+
+input_tab = ttk.Frame(tab)
+run_tab = ttk.Frame(tab)
+compare_tab = ttk.Frame(tab)
+
+tab.add(input_tab, text='Inputs')
+tab.add(run_tab, text='Run')
+tab.add(compare_tab, text='Compare')
+
+# ======================= Input Tab =========================
+input_frame = tk.Frame(input_tab, bg="#f0f4f7", bd=1, relief="solid")
+input_frame.pack(pady=10, padx=10, fill='x')
+
+tk.Label(input_frame, text='Enter Bin Capacity:', font=("Arial", 10, "bold"),
+            bg="#f0f4f7").grid(row=0, column=0, sticky='w', pady=5, padx=5)
+tk.Label(input_frame, text='Enter Items (comma separated):', font=("Arial", 10, "bold"),
+            bg="#f0f4f7").grid(row=1, column=0, sticky='w', pady=5, padx=5)
+tk.Label(input_frame, text='Choose your Algorithm:', font=("Arial", 10, "bold"),
+            bg="#f0f4f7").grid(row=2, column=0, sticky='w', pady=5, padx=5)
+
+input_tab_entry = tk.Entry(input_frame, font=("Arial", 10), bd=2, relief="groove")
+input_tab_entry.grid(row=0, column=1, sticky='ew', pady=5, padx=5)
+input_tab_entry.insert(0, "10")
+
+input_tab_entry2 = tk.Entry(input_frame, font=("Arial", 10), bd=2, relief="groove")
+input_tab_entry2.grid(row=1, column=1, sticky='ew', pady=5, padx=5)
+input_tab_entry2.insert(0, "2,5,4,7,1,3,8")
+
+input_frame.columnconfigure(1, weight=1)
+
+algorithm_var = tk.StringVar(value="Backtracking")
+radio_frame = tk.Frame(input_frame, bg="#f0f4f7")
+radio_frame.grid(row=2, column=1, sticky='w', pady=5, padx=5)
+
+tk.Radiobutton(radio_frame, text="Backtracking", variable=algorithm_var, value="Backtracking",
+                bg="#f0f4f7", font=("Arial", 10)).pack(side='left', padx=(0, 10))
+tk.Radiobutton(radio_frame, text="Culture", variable=algorithm_var, value="Culture",
+                bg="#f0f4f7", font=("Arial", 10)).pack(side='left')
+
+buttons_frame = tk.Frame(input_frame, bg="#f0f4f7")
+buttons_frame.grid(row=3, column=0, columnspan=2, pady=10)
+
+
+def on_enter(e, button):
+    button['bg'] = '#0d3b66'
+    button['fg'] = 'white'
+
+
+def on_leave(e, button):
+    button['bg'] = '#00a6fb'
+    button['fg'] = 'white'
+
+
+compare_button = tk.Button(buttons_frame, text='Compare Algorithms', font=("Arial", 10, "bold"),
+                            bg="#00a6fb", fg="white", bd=0, padx=10, pady=5)
+compare_button.pack(side='left', padx=(0, 10))
+compare_button.bind("<Enter>", lambda e: on_enter(e, compare_button))
+compare_button.bind("<Leave>", lambda e: on_leave(e, compare_button))
+
+start_button = tk.Button(buttons_frame, text="Start Packing", font=("Arial", 10, "bold"),
+                            bg="#00a6fb", fg="white", bd=0, padx=10, pady=5)
+start_button.pack(side='left')
+start_button.bind("<Enter>", lambda e: on_enter(e, start_button))
+start_button.bind("<Leave>", lambda e: on_leave(e, start_button))
+
+# ======================= Run Tab ===========================
+canvas = tk.Canvas(run_tab, width=450, height=350, bg="white", bd=2, relief="solid")
+canvas.pack(pady=10)
+
+run_tab_label = tk.Label(run_tab, text='Results will be provided here',
+                            justify='left', font=("Arial", 10), bg="#f0f4f7")
+run_tab_label.pack(pady=10, padx=10, fill='x')
+
+ITEM_COLORS = {
+    1: "#FF6B6B", 2: "#4ECDC4", 3: "#45B7D1", 4: "#96CEB4",
+    5: "#FFEAA7", 6: "#DDA0DD", 7: "#FFA07A", 8: "#98D8C8",
+    9: "#F7DC6F", 10: "#BB8FCE"
+}
+
+
+def draw_items_sequential(x, y, width, height, items, capacity, bin_number, index=0, current_y=None):
+    if index >= len(items):
+        return
+    if current_y is None:
+        current_y = y + height * 0.9
+
+    item = items[-(index + 1)]  
+    block_height = (height * 0.8) / capacity
+    item_height = block_height * item
+    color = ITEM_COLORS.get(item, "#CCCCCC")
+    block_y = current_y - item_height
+
+    if index == 0:
+        neck_width = width // 2
+        neck_x = x + (width - neck_width) // 2
+        canvas.create_rectangle(neck_x, y - 20, neck_x + neck_width, y,
+                                outline="black", fill="#f8f9fa", width=2)
+        canvas.create_rectangle(x, y, x + width, y + height, outline="black", fill="#f8f9fa", width=2)
+        canvas.create_text(x + width // 2, y + height + 15, text=f"Bin {bin_number}", font=("Arial", 9, "bold"))
+        used = sum(items)
+        canvas.create_text(x + width // 2, y + height + 30, text=f"{used}/{capacity}", font=("Arial", 8, "bold"))
+
+    block = canvas.create_rectangle(x + 5, y - 50, x + width - 5, y - 50 + item_height, fill=color, outline="black")
+    text = canvas.create_text(x + width // 2, y - 50 + item_height / 2, text=str(item), font=("Arial", 8, "bold"))
+
+    def animate():
+        pos = canvas.coords(block)
+        if pos[1] < block_y:
+            canvas.move(block, 0, 2)
+            canvas.move(text, 0, 2)
+            canvas.after(20, animate)
+        else:
+            # العنصر التالي بعد انتهاء الحالي
+            draw_items_sequential(x, y, width, height, items, capacity, bin_number, index + 1, current_y=block_y)
+
+    animate()
+
+
+# ======================= Algorithms Data ========================
+STATIC_DATA = {
+    "Backtracking": {
+        "bins": [
+            {"items": [8, 2], "used": 10},
+            {"items": [7, 3], "used": 10},
+            {"items": [5, 4, 1], "used": 10}
+        ],
+        "total_bins": 3
+    },
+    "Culture": {
+        "bins": [
+            {"items": [2, 5, 3], "used": 10},
+            {"items": [4, 1], "used": 5},
+            {"items": [7], "used": 7},
+            {"items": [8], "used": 8}
+        ],
+        "total_bins": 4
+    }
+}
+
+
+def backtracking_algorithm(items, capacity):
+    return STATIC_DATA["Backtracking"]
+
+
+def culture_algorithm(items, capacity):
+    return STATIC_DATA["Culture"]
+
+
+ALGORITHMS = {
+    "Backtracking": backtracking_algorithm,
+    "Culture": culture_algorithm
+}
+
+
+# ======================= Start Packing =====================
+def start_packing():
+    canvas.delete("all")
+
+    bin_capacity = input_tab_entry.get()
+    items = input_tab_entry2.get()
+    algorithm_name = algorithm_var.get()
+
+    # Validation
+    if not bin_capacity.isdigit():
+        run_tab_label.config(text="Error: Bin capacity must be a number.")
+        tab.select(run_tab)
+        return
+    try:
+        items_list = [int(x.strip()) for x in items.split(',') if x.strip()]
+        if not items_list:
+            run_tab_label.config(text="Error: Please enter at least one item.")
+            tab.select(run_tab)
+            return
+    except ValueError:
+        run_tab_label.config(text="Error: Items must be numbers separated by commas.")
+        tab.select(run_tab)
+        return
+
+    bin_capacity = int(bin_capacity)
+    algorithm_data = ALGORITHMS[algorithm_name](items_list, bin_capacity)
+
+    bins = algorithm_data["bins"]
+    bins_needed = algorithm_data["total_bins"]
+
+    start_x = 60
+    y_target = 60
+    gap = 100
+
+    for i, bin_data in enumerate(bins):
+        x = start_x + i * gap
+        draw_items_sequential(x, y_target, 50, 100, bin_data["items"], bin_capacity, i + 1)
+
+    result_text = (
+        f"Bin Capacity: {bin_capacity}\n"
+        f"Items: {items_list}\n"
+        f"Algorithm Selected: {algorithm_name}\n"
+        f"Bins Needed: {bins_needed}\n"
+        f"Bin Contents: {[bin['items'] for bin in bins]}"
+    )
+    run_tab_label.config(text=result_text)
+    tab.select(run_tab)
+
+
+start_button.config(command=start_packing)
+
+# ======================= Compare Tab =======================
+compare_tab_label = tk.Label(compare_tab, text='Compare results will be provided here',
+                                justify='left', font=("Arial", 10), bg="#f0f4f7")
+compare_tab_label.pack(pady=10, padx=10, fill='x')
+
+
+def compare_algo():
+    bin_capacity = input_tab_entry.get()
+    items = input_tab_entry2.get()
+
+    # Validation
+    if not bin_capacity.isdigit():
+        compare_tab_label.config(text="Error: Bin capacity must be a number.")
+        tab.select(compare_tab)
+        return
+    try:
+        items_list = [int(x.strip()) for x in items.split(',') if x.strip()]
+        if not items_list:
+            compare_tab_label.config(text="Error: Please enter at least one item.")
+            tab.select(compare_tab)
+            return
+    except ValueError:
+        compare_tab_label.config(text="Error: Items must be numbers separated by commas.")
+        tab.select(compare_tab)
+        return
+
+    bin_capacity = int(bin_capacity)
+    compare_text = ""
+    for algo_name, algo_func in ALGORITHMS.items():
+        data = algo_func(items_list, bin_capacity)
+        efficiency = (sum(sum(bin['items']) for bin in data['bins']) / (data['total_bins'] * bin_capacity)) * 100
+        compare_text += (
+            f"{algo_name} Algorithm:\n"
+            f"  - Bins Needed: {data['total_bins']}\n"
+            f"  - Bin Contents: {[bin['items'] for bin in data['bins']]}\n"
+            f"  - Efficiency: {efficiency:.1f}%\n\n"
+        )
+    compare_tab_label.config(text=compare_text.strip())
+    tab.select(compare_tab)
+
+
+compare_button.config(command=compare_algo)
+
+# ======================= Run App ===========================
+root.mainloop()
