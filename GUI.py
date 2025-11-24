@@ -97,8 +97,24 @@ start_button.bind("<Enter>", lambda e: on_enter(e, start_button))
 start_button.bind("<Leave>", lambda e: on_leave(e, start_button))
 
 # ======================= Run Tab ===========================
-canvas = tk.Canvas(run_tab, width=450, height=350, bg="white", bd=2, relief="solid")
-canvas.pack(pady=10)
+canvas_frame = tk.Frame(run_tab)
+canvas_frame.pack(fill="both", expand=True, pady=10)
+
+v_scroll = tk.Scrollbar(canvas_frame, orient="vertical")
+v_scroll.pack(side="right", fill="y")
+
+canvas = tk.Canvas(
+    canvas_frame,
+    width=450,
+    height=350,
+    bg="white",
+    bd=2,
+    relief="solid",
+    yscrollcommand=v_scroll.set
+)
+canvas.pack(side="left", fill="both", expand=True)
+
+v_scroll.config(command=canvas.yview)
 
 run_tab_label = tk.Label(run_tab, text='Results will be provided here',
                             justify='left', font=("Arial", 10), bg="#f0f4f7")
@@ -230,13 +246,23 @@ def start_packing():
     bins_needed = algorithm_data["total_bins"]
 
     start_x = 60
-    y_target = 60
-    gap = 100
+    start_y = 60
+    gap_x = 100        
+    gap_y = 180        
+    bins_per_row = 4 
 
     for i, bin_data in enumerate(bins):
-        # print(bin_data)
-        x = start_x + i * gap
-        draw_items_sequential(x, y_target, 50, 100, bin_data, bin_capacity, i + 1)
+        row = i // bins_per_row     
+        col = i % bins_per_row       
+
+        x = start_x + col * gap_x
+        y = start_y + row * gap_y
+
+        draw_items_sequential(x, y, 50, 100, bin_data, bin_capacity, i + 1)
+        canvas.update_idletasks()
+        bbox = canvas.bbox("all")
+        if bbox:
+            canvas.config(scrollregion=(0, 0, bbox[2] + 50, bbox[3] + 50))
 
     result_text = (
         f"Bin Capacity: {bin_capacity}\n"
