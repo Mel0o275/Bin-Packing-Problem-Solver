@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
-
+import bin
+# print(bin.cultural_algorithm([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 10))
 # ======================= Tkinter Setup ======================
 root = tk.Tk()
 root.title("Bin Packing")
@@ -149,6 +150,13 @@ def draw_items_sequential(x, y, width, height, items, capacity, bin_number, inde
 
 
 # ======================= Algorithms Data ========================
+# global bins, bins_used
+# print(bins_used)
+bins_used=2
+bins=[[3]]
+
+
+
 STATIC_DATA = {
     "Backtracking": {
         "bins": [
@@ -159,13 +167,14 @@ STATIC_DATA = {
         "total_bins": 3
     },
     "Culture": {
-        "bins": [
-            {"items": [2, 5, 3], "used": 10},
-            {"items": [4, 1], "used": 5},
-            {"items": [7], "used": 7},
-            {"items": [8], "used": 8}
-        ],
-        "total_bins": 4
+        "bins": bins,
+        #     [
+        #     {"items": [2, 5, 3], "used": 10},
+        #     {"items": [4, 1], "used": 5},
+        #     {"items": [7], "used": 7},
+        #     {"items": [8], "used": 8}
+        # ],
+        "total_bins": bins_used
     }
 }
 
@@ -175,6 +184,12 @@ def backtracking_algorithm(items, capacity):
 
 
 def culture_algorithm(items, capacity):
+    global bins_used , bins
+    best_sol, bins_used = bin.cultural_algorithm(items, capacity)    # Run Cultural Algorithm
+    _, bins = bin.evaluate(best_sol, capacity)    # Build final bin packing for display
+    # print(bins)
+    STATIC_DATA["Culture"]["bins"] = bins
+    STATIC_DATA["Culture"]["total_bins"] = bins_used
     return STATIC_DATA["Culture"]
 
 
@@ -219,15 +234,16 @@ def start_packing():
     gap = 100
 
     for i, bin_data in enumerate(bins):
+        # print(bin_data)
         x = start_x + i * gap
-        draw_items_sequential(x, y_target, 50, 100, bin_data["items"], bin_capacity, i + 1)
+        draw_items_sequential(x, y_target, 50, 100, bin_data, bin_capacity, i + 1)
 
     result_text = (
         f"Bin Capacity: {bin_capacity}\n"
         f"Items: {items_list}\n"
         f"Algorithm Selected: {algorithm_name}\n"
         f"Bins Needed: {bins_needed}\n"
-        f"Bin Contents: {[bin['items'] for bin in bins]}"
+        f"Bin Contents: {[bin for binx in bins]}"
     )
     run_tab_label.config(text=result_text)
     tab.select(run_tab)
@@ -265,7 +281,7 @@ def compare_algo():
     compare_text = ""
     for algo_name, algo_func in ALGORITHMS.items():
         data = algo_func(items_list, bin_capacity)
-        efficiency = (sum(sum(bin['items']) for bin in data['bins']) / (data['total_bins'] * bin_capacity)) * 100
+        efficiency = (sum(sum(int(item) for item in bin) for bin in data['bins']) / (data['total_bins'] * bin_capacity)) * 100
         compare_text += (
             f"{algo_name} Algorithm:\n"
             f"  - Bins Needed: {data['total_bins']}\n"
