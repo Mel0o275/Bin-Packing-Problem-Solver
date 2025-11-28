@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
-
+import bin
+# import BacktrackingMenna as bt
+# print(bin.cultural_algorithm([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 10))
 # ======================= Tkinter Setup ======================
 root = tk.Tk()
 root.title("Bin Packing")
@@ -96,8 +98,24 @@ start_button.bind("<Enter>", lambda e: on_enter(e, start_button))
 start_button.bind("<Leave>", lambda e: on_leave(e, start_button))
 
 # ======================= Run Tab ===========================
-canvas = tk.Canvas(run_tab, width=450, height=350, bg="white", bd=2, relief="solid")
-canvas.pack(pady=10)
+canvas_frame = tk.Frame(run_tab)
+canvas_frame.pack(fill="both", expand=True, pady=10)
+
+v_scroll = tk.Scrollbar(canvas_frame, orient="vertical")
+v_scroll.pack(side="right", fill="y")
+
+canvas = tk.Canvas(
+    canvas_frame,
+    width=450,
+    height=350,
+    bg="white",
+    bd=2,
+    relief="solid",
+    yscrollcommand=v_scroll.set
+)
+canvas.pack(side="left", fill="both", expand=True)
+
+v_scroll.config(command=canvas.yview)
 
 run_tab_label = tk.Label(run_tab, text='Results will be provided here',
                             justify='left', font=("Arial", 10), bg="#f0f4f7")
@@ -148,33 +166,95 @@ def draw_items_sequential(x, y, width, height, items, capacity, bin_number, inde
     animate()
 
 
+
+# ======================= Backtracking Algorithm ========================
+
+def backtracking(index, current_bins):
+    global best_bins, best_solution
+    if index == len(items):
+        if len(current_bins) < best_bins:
+            best_bins = len(current_bins)
+            best_solution = [bin.copy() for bin in current_bins]
+        return
+    item = items[index]
+    for i in current_bins:
+        if sum(i) + item <= bin_capacity:
+            i.append(item)
+            backtracking(index + 1, current_bins)
+            i.pop()
+    if(len(current_bins) + 1 < best_bins):
+        new_bin =[item]
+        current_bins.append(new_bin)
+        backtracking(index + 1, current_bins)
+        current_bins.remove(new_bin)
+
+
 # ======================= Algorithms Data ========================
+# global bins, bins_used
+# print(bins_used)
+#cultural
+bins_used=2
+bins=[[3]]
+
+#backtracking
+items = []
+bin_capacity = 0
+# # sort
+# items.sort(reverse=True)
+# list of best solution bin
+best_bins = 10**9
+best_solution = []
+
+
+
+
 STATIC_DATA = {
     "Backtracking": {
-        "bins": [
-            {"items": [8, 2], "used": 10},
-            {"items": [7, 3], "used": 10},
-            {"items": [5, 4, 1], "used": 10}
-        ],
-        "total_bins": 3
+        "bins": best_solution,
+        #     [
+        #     {"items": [8, 2], "used": 10},
+        #     {"items": [7, 3], "used": 10},
+        #     {"items": [5, 4, 1], "used": 10}
+        # ],
+        "total_bins": best_bins
     },
     "Culture": {
-        "bins": [
-            {"items": [2, 5, 3], "used": 10},
-            {"items": [4, 1], "used": 5},
-            {"items": [7], "used": 7},
-            {"items": [8], "used": 8}
-        ],
-        "total_bins": 4
+        "bins": bins,
+        #     [
+        #     {"items": [2, 5, 3], "used": 10},
+        #     {"items": [4, 1], "used": 5},
+        #     {"items": [7], "used": 7},
+        #     {"items": [8], "used": 8}
+        # ],
+        "total_bins": bins_used
     }
 }
 
 
-def backtracking_algorithm(items, capacity):
+def backtracking_algorithm(itemsx, capacity):
+    global best_bins, best_solution , items, bin_capacity
+    best_bins = 10**9
+    best_solution = []
+    items = itemsx
+    bin_capacity = capacity
+    # sort
+    items.sort(reverse=True)
+    backtracking(0, [])
+    STATIC_DATA["Backtracking"]["bins"] = best_solution
+    STATIC_DATA["Backtracking"]["total_bins"] = best_bins
+    # print(best_bins)
+    # print(best_solution)
+    # print(items)
     return STATIC_DATA["Backtracking"]
 
 
 def culture_algorithm(items, capacity):
+    global bins_used , bins
+    best_sol, bins_used = bin.cultural_algorithm(items, capacity)    # Run Cultural Algorithm
+    _, bins = bin.evaluate(best_sol, capacity)    # Build final bin packing for display
+    # print(bins)
+    STATIC_DATA["Culture"]["bins"] = bins
+    STATIC_DATA["Culture"]["total_bins"] = bins_used
     return STATIC_DATA["Culture"]
 
 
@@ -215,19 +295,30 @@ def start_packing():
     bins_needed = algorithm_data["total_bins"]
 
     start_x = 60
-    y_target = 60
-    gap = 100
+    start_y = 60
+    gap_x = 100        
+    gap_y = 180        
+    bins_per_row = 4 
 
     for i, bin_data in enumerate(bins):
-        x = start_x + i * gap
-        draw_items_sequential(x, y_target, 50, 100, bin_data["items"], bin_capacity, i + 1)
+        row = i // bins_per_row     
+        col = i % bins_per_row       
+
+        x = start_x + col * gap_x
+        y = start_y + row * gap_y
+
+        draw_items_sequential(x, y, 50, 100, bin_data, bin_capacity, i + 1)
+        canvas.update_idletasks()
+        bbox = canvas.bbox("all")
+        if bbox:
+            canvas.config(scrollregion=(0, 0, bbox[2] + 50, bbox[3] + 50))
 
     result_text = (
         f"Bin Capacity: {bin_capacity}\n"
         f"Items: {items_list}\n"
         f"Algorithm Selected: {algorithm_name}\n"
         f"Bins Needed: {bins_needed}\n"
-        f"Bin Contents: {[bin['items'] for bin in bins]}"
+        f"Bin Contents: {[bin for binx in bins]}"
     )
     run_tab_label.config(text=result_text)
     tab.select(run_tab)
@@ -265,11 +356,11 @@ def compare_algo():
     compare_text = ""
     for algo_name, algo_func in ALGORITHMS.items():
         data = algo_func(items_list, bin_capacity)
-        efficiency = (sum(sum(bin['items']) for bin in data['bins']) / (data['total_bins'] * bin_capacity)) * 100
+        efficiency = (sum(sum(int(item) for item in bin) for bin in data['bins']) / (data['total_bins'] * bin_capacity)) * 100
         compare_text += (
             f"{algo_name} Algorithm:\n"
             f"  - Bins Needed: {data['total_bins']}\n"
-            f"  - Bin Contents: {[bin['items'] for bin in data['bins']]}\n"
+            f"  - Bin Contents: {[bin for bin in data['bins']]}\n"
             f"  - Efficiency: {efficiency:.1f}%\n\n"
         )
     compare_tab_label.config(text=compare_text.strip())

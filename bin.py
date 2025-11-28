@@ -18,7 +18,7 @@ def evaluate(solution, capacity):
                 placed = True
                 break
 
-      
+    
         if not placed:  # If it cannot fit in any existing bin -> create a new bin
             bins.append([obj])
 
@@ -157,4 +157,4 @@ def main():
         print(f"Bin {i+1}: {b}  (total = {sum(b)})")
 
 
-main()
+# main()
