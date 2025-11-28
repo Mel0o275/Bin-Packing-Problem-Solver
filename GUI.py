@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 import bin
+# import BacktrackingMenna as bt
 # print(bin.cultural_algorithm([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 10))
 # ======================= Tkinter Setup ======================
 root = tk.Tk()
@@ -165,22 +166,57 @@ def draw_items_sequential(x, y, width, height, items, capacity, bin_number, inde
     animate()
 
 
+
+# ======================= Backtracking Algorithm ========================
+
+def backtracking(index, current_bins):
+    global best_bins, best_solution
+    if index == len(items):
+        if len(current_bins) < best_bins:
+            best_bins = len(current_bins)
+            best_solution = [bin.copy() for bin in current_bins]
+        return
+    item = items[index]
+    for i in current_bins:
+        if sum(i) + item <= bin_capacity:
+            i.append(item)
+            backtracking(index + 1, current_bins)
+            i.pop()
+    if(len(current_bins) + 1 < best_bins):
+        new_bin =[item]
+        current_bins.append(new_bin)
+        backtracking(index + 1, current_bins)
+        current_bins.remove(new_bin)
+
+
 # ======================= Algorithms Data ========================
 # global bins, bins_used
 # print(bins_used)
+#cultural
 bins_used=2
 bins=[[3]]
+
+#backtracking
+items = []
+bin_capacity = 0
+# # sort
+# items.sort(reverse=True)
+# list of best solution bin
+best_bins = 10**9
+best_solution = []
+
 
 
 
 STATIC_DATA = {
     "Backtracking": {
-        "bins": [
-            {"items": [8, 2], "used": 10},
-            {"items": [7, 3], "used": 10},
-            {"items": [5, 4, 1], "used": 10}
-        ],
-        "total_bins": 3
+        "bins": best_solution,
+        #     [
+        #     {"items": [8, 2], "used": 10},
+        #     {"items": [7, 3], "used": 10},
+        #     {"items": [5, 4, 1], "used": 10}
+        # ],
+        "total_bins": best_bins
     },
     "Culture": {
         "bins": bins,
@@ -195,7 +231,20 @@ STATIC_DATA = {
 }
 
 
-def backtracking_algorithm(items, capacity):
+def backtracking_algorithm(itemsx, capacity):
+    global best_bins, best_solution , items, bin_capacity
+    best_bins = 10**9
+    best_solution = []
+    items = itemsx
+    bin_capacity = capacity
+    # sort
+    items.sort(reverse=True)
+    backtracking(0, [])
+    STATIC_DATA["Backtracking"]["bins"] = best_solution
+    STATIC_DATA["Backtracking"]["total_bins"] = best_bins
+    # print(best_bins)
+    # print(best_solution)
+    # print(items)
     return STATIC_DATA["Backtracking"]
 
 
@@ -311,7 +360,7 @@ def compare_algo():
         compare_text += (
             f"{algo_name} Algorithm:\n"
             f"  - Bins Needed: {data['total_bins']}\n"
-            f"  - Bin Contents: {[bin['items'] for bin in data['bins']]}\n"
+            f"  - Bin Contents: {[bin for bin in data['bins']]}\n"
             f"  - Efficiency: {efficiency:.1f}%\n\n"
         )
     compare_tab_label.config(text=compare_text.strip())
