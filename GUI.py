@@ -13,7 +13,7 @@ screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
 # Make Window Centered
 window_width = 500
-window_height = 550
+window_height = 630
 x = (screen_width // 2) - (window_width // 2)
 y = (screen_height // 2) - (window_height // 2)
 root.geometry(f"{window_width}x{window_height}+{x}+{y}")
@@ -49,8 +49,10 @@ tk.Label(input_frame, text='Enter Bin Capacity:', font=("Arial", 10, "bold"),
             bg="#f0f4f7").grid(row=0, column=0, sticky='w', pady=5, padx=5)
 tk.Label(input_frame, text='Enter Items (comma separated):', font=("Arial", 10, "bold"),
             bg="#f0f4f7").grid(row=1, column=0, sticky='w', pady=5, padx=5)
-tk.Label(input_frame, text='Choose your Algorithm:', font=("Arial", 10, "bold"),
+tk.Label(input_frame, text='Choose your Max Bins:', font=("Arial", 10, "bold"),
             bg="#f0f4f7").grid(row=2, column=0, sticky='w', pady=5, padx=5)
+tk.Label(input_frame, text='Choose your Algorithm:', font=("Arial", 10, "bold"),
+            bg="#f0f4f7").grid(row=3, column=0, sticky='w', pady=5, padx=5)
 
 input_tab_entry = tk.Entry(input_frame, font=("Arial", 10), bd=2, relief="groove")
 input_tab_entry.grid(row=0, column=1, sticky='ew', pady=5, padx=5)
@@ -60,11 +62,15 @@ input_tab_entry2 = tk.Entry(input_frame, font=("Arial", 10), bd=2, relief="groov
 input_tab_entry2.grid(row=1, column=1, sticky='ew', pady=5, padx=5)
 input_tab_entry2.insert(0, "2,5,4,7,1,3,8")
 
+input_tab_entry3 = tk.Entry(input_frame, font=("Arial", 10), bd=2, relief="groove")
+input_tab_entry3.grid(row=2, column=1, sticky='ew', pady=5, padx=5)
+input_tab_entry3.insert(0, "5")
+
 input_frame.columnconfigure(1, weight=1)
 
 algorithm_var = tk.StringVar(value="Backtracking")
 radio_frame = tk.Frame(input_frame, bg="#f0f4f7")
-radio_frame.grid(row=2, column=1, sticky='w', pady=5, padx=5)
+radio_frame.grid(row=3, column=1, sticky='w', pady=5, padx=5)
 
 tk.Radiobutton(radio_frame, text="Backtracking", variable=algorithm_var, value="Backtracking",
                 bg="#f0f4f7", font=("Arial", 10)).pack(side='left', padx=(0, 10))
@@ -72,7 +78,7 @@ tk.Radiobutton(radio_frame, text="Culture", variable=algorithm_var, value="Cultu
                 bg="#f0f4f7", font=("Arial", 10)).pack(side='left')
 
 buttons_frame = tk.Frame(input_frame, bg="#f0f4f7")
-buttons_frame.grid(row=3, column=0, columnspan=2, pady=10)
+buttons_frame.grid(row=4, column=0, columnspan=2, pady=10)
 
 
 def on_enter(e, button):
@@ -107,7 +113,7 @@ v_scroll.pack(side="right", fill="y")
 canvas = tk.Canvas(
     canvas_frame,
     width=450,
-    height=350,
+    height=370,
     bg="white",
     bd=2,
     relief="solid",
@@ -119,7 +125,7 @@ v_scroll.config(command=canvas.yview)
 
 run_tab_label = tk.Label(run_tab, text='Results will be provided here',
                             justify='left', font=("Arial", 10), bg="#f0f4f7")
-run_tab_label.pack(pady=10, padx=10, fill='x')
+run_tab_label.pack(pady=5, padx=10, fill='x')
 
 ITEM_COLORS = {
     1: "#FF6B6B", 2: "#4ECDC4", 3: "#45B7D1", 4: "#96CEB4",
@@ -130,7 +136,14 @@ ITEM_COLORS = {
 
 def draw_items_sequential(x, y, width, height, items, capacity, bin_number, index=0, current_y=None):
     if index >= len(items):
+        # لو bin فاضية
+        if not items:
+            # رسم الصندوق الفارغ
+            canvas.create_rectangle(x, y, x + width, y + height, outline="black", fill="#e0e0e0", width=2)
+            canvas.create_text(x + width // 2, y + height // 2, text="Empty", font=("Arial", 8, "italic"))
+            canvas.create_text(x + width // 2, y + height + 15, text=f"Bin {bin_number}", font=("Arial", 9, "bold"))
         return
+
     if current_y is None:
         current_y = y + height * 0.9
 
@@ -160,7 +173,6 @@ def draw_items_sequential(x, y, width, height, items, capacity, bin_number, inde
             canvas.move(text, 0, 2)
             canvas.after(20, animate)
         else:
-            # العنصر التالي بعد انتهاء الحالي
             draw_items_sequential(x, y, width, height, items, capacity, bin_number, index + 1, current_y=block_y)
 
     animate()
@@ -271,10 +283,14 @@ def start_packing():
     bin_capacity = input_tab_entry.get()
     items = input_tab_entry2.get()
     algorithm_name = algorithm_var.get()
+    max_bins = input_tab_entry3.get()
 
     # Validation
-    if not bin_capacity.isdigit():
-        run_tab_label.config(text="Error: Bin capacity must be a number.")
+    # if bin_capacity < items:
+    #     run_tab_label.config(text="Error: Bin capacity must be greater than item.")
+    #     return
+    if not bin_capacity.isdigit() or not max_bins.isdigit():
+        run_tab_label.config(text="Error: Bin capacity and Max Bins must be numbers.")
         tab.select(run_tab)
         return
     try:
@@ -283,16 +299,26 @@ def start_packing():
             run_tab_label.config(text="Error: Please enter at least one item.")
             tab.select(run_tab)
             return
+        for item in items_list:
+            if item > int(bin_capacity):
+                run_tab_label.config(text=f"Error: Item {item} exceeds bin capacity {bin_capacity}.")
+                tab.select(run_tab)
+                return
     except ValueError:
         run_tab_label.config(text="Error: Items must be numbers separated by commas.")
         tab.select(run_tab)
         return
 
     bin_capacity = int(bin_capacity)
+    max_bins = int(max_bins)
     algorithm_data = ALGORITHMS[algorithm_name](items_list, bin_capacity)
 
     bins = algorithm_data["bins"]
     bins_needed = algorithm_data["total_bins"]
+
+    if bins_needed < max_bins:
+        bins += [[] for _ in range(max_bins - bins_needed)]
+        bins_needed = max_bins
 
     start_x = 60
     start_y = 60
@@ -317,8 +343,9 @@ def start_packing():
         f"Bin Capacity: {bin_capacity}\n"
         f"Items: {items_list}\n"
         f"Algorithm Selected: {algorithm_name}\n"
-        f"Bins Needed: {bins_needed}\n"
-        f"Bin Contents: {[bin for binx in bins]}"
+        f"Bins Needed by Algorithm: {algorithm_data['total_bins']}\n"
+        f"Displayed Bins: {len(bins)}\n"
+        f"Bin Contents: {bins}"
     )
     run_tab_label.config(text=result_text)
     tab.select(run_tab)
