@@ -136,9 +136,7 @@ ITEM_COLORS = {
 
 def draw_items_sequential(x, y, width, height, items, capacity, bin_number, index=0, current_y=None):
     if index >= len(items):
-        # لو bin فاضية
         if not items:
-            # رسم الصندوق الفارغ
             canvas.create_rectangle(x, y, x + width, y + height, outline="black", fill="#e0e0e0", width=2)
             canvas.create_text(x + width // 2, y + height // 2, text="Empty", font=("Arial", 8, "italic"))
             canvas.create_text(x + width // 2, y + height + 15, text=f"Bin {bin_number}", font=("Arial", 9, "bold"))
@@ -182,7 +180,8 @@ def draw_items_sequential(x, y, width, height, items, capacity, bin_number, inde
 # ======================= Backtracking Algorithm ========================
 
 def backtracking(index, current_bins):
-    global best_bins, best_solution
+    global best_bins, best_solution, backtracking_calls
+    backtracking_calls += 1    
     if index == len(items):
         if len(current_bins) < best_bins:
             best_bins = len(current_bins)
@@ -211,6 +210,7 @@ bins=[[3]]
 #backtracking
 items = []
 bin_capacity = 0
+backtracking_calls = 0
 # # sort
 # items.sort(reverse=True)
 # list of best solution bin
@@ -228,7 +228,8 @@ STATIC_DATA = {
         #     {"items": [7, 3], "used": 10},
         #     {"items": [5, 4, 1], "used": 10}
         # ],
-        "total_bins": best_bins
+        "total_bins": best_bins,
+        "calls": backtracking_calls
     },
     "Culture": {
         "bins": bins,
@@ -244,8 +245,9 @@ STATIC_DATA = {
 
 
 def backtracking_algorithm(itemsx, capacity):
-    global best_bins, best_solution , items, bin_capacity
+    global best_bins, best_solution , items, bin_capacity, backtracking_calls
     best_bins = 10**9
+    backtracking_calls = 0
     best_solution = []
     items = itemsx
     bin_capacity = capacity
@@ -254,6 +256,7 @@ def backtracking_algorithm(itemsx, capacity):
     backtracking(0, [])
     STATIC_DATA["Backtracking"]["bins"] = best_solution
     STATIC_DATA["Backtracking"]["total_bins"] = best_bins
+    STATIC_DATA["Backtracking"]["calls"] = backtracking_calls
     # print(best_bins)
     # print(best_solution)
     # print(items)
@@ -262,11 +265,12 @@ def backtracking_algorithm(itemsx, capacity):
 
 def culture_algorithm(items, capacity):
     global bins_used , bins
-    best_sol, bins_used = bin.cultural_algorithm(items, capacity)    # Run Cultural Algorithm
+    best_sol, bins_used, bins, population = bin.cultural_algorithm(items, capacity)
     _, bins = bin.evaluate(best_sol, capacity)    # Build final bin packing for display
     # print(bins)
     STATIC_DATA["Culture"]["bins"] = bins
     STATIC_DATA["Culture"]["total_bins"] = bins_used
+    STATIC_DATA["Culture"]["population"] = population
     return STATIC_DATA["Culture"]
 
 
@@ -358,6 +362,11 @@ compare_tab_label = tk.Label(compare_tab, text='Compare results will be provided
                                 justify='left', font=("Arial", 10), bg="#f0f4f7")
 compare_tab_label.pack(pady=10, padx=10, fill='x')
 
+# ======================= Population Treeview =======================
+population_tree = ttk.Treeview(compare_tab, columns=("Solution"), show="headings", height=10)
+population_tree.heading("Solution", text="Culture Population Solutions")
+population_tree.column("Solution", width=450, anchor="w")
+population_tree.pack(pady=5, padx=10, fill='x')
 
 def compare_algo():
     bin_capacity = input_tab_entry.get()
@@ -381,15 +390,21 @@ def compare_algo():
 
     bin_capacity = int(bin_capacity)
     compare_text = ""
+    population_tree.delete(*population_tree.get_children())  # نظف الـ Treeview قبل الإضافة
+
     for algo_name, algo_func in ALGORITHMS.items():
         data = algo_func(items_list, bin_capacity)
         efficiency = (sum(sum(int(item) for item in bin) for bin in data['bins']) / (data['total_bins'] * bin_capacity)) * 100
+        calls_info = f" (Backtracking calls: {data.get('calls', 0)})" if algo_name == "Backtracking" else ""
         compare_text += (
-            f"{algo_name} Algorithm:\n"
+            f"{algo_name} Algorithm{calls_info}:\n"
             f"  - Bins Needed: {data['total_bins']}\n"
             f"  - Bin Contents: {[bin for bin in data['bins']]}\n"
             f"  - Efficiency: {efficiency:.1f}%\n\n"
         )
+        if algo_name == "Culture" and "population" in data:
+            for idx, sol in enumerate(data["population"], 1):
+                population_tree.insert("", "end", values=[f"Solution {idx}: {sol}"])
     compare_tab_label.config(text=compare_text.strip())
     tab.select(compare_tab)
 
