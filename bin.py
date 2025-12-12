@@ -126,7 +126,8 @@ def cultural_algorithm(objects, capacity, population_size=40, generations=200):
                 new_population.append(mutate(child, capacity))
 
         population = new_population 
-    return situational_best_solution, situational_best_bins    # Return best solution found after all generations
+        final_bins_count, final_bins = evaluate(situational_best_solution, capacity)
+    return situational_best_solution, final_bins_count, final_bins, population
 
 
 
