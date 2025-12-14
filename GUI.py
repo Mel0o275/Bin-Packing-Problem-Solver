@@ -443,10 +443,18 @@ def start_packing():
     max_bins = int(max_bins)
     algorithm_data = ALGORITHMS[algorithm_name](items_list, bin_capacity)
 
-    bins = algorithm_data["bins"]
     bins_needed = algorithm_data["total_bins"]
 
-    if bins_needed < max_bins:
+    if max_bins < bins_needed:
+        run_tab_label.config(
+            text=f"Error: Maximum bins ({max_bins}) is LESS than the bins required by the algorithm ({bins_needed})."
+        )
+        tab.select(run_tab)
+        return
+
+    bins = algorithm_data["bins"]
+
+    if max_bins > bins_needed:
         bins += [[] for _ in range(max_bins - bins_needed)]
         bins_needed = max_bins
 
