@@ -121,13 +121,72 @@ algorithm_var = tk.StringVar(value="Backtracking")
 radio_frame = tk.Frame(input_frame, bg="#f0f4f7")
 radio_frame.grid(row=3, column=1, sticky='w', pady=5, padx=5)
 
+# =================== Buttons ===============================
+buttons_frame = tk.Frame(input_frame, bg="#f0f4f7")
+buttons_frame.grid(row=8, column=0, columnspan=2, pady=10)
+
+def reset_app():
+    canvas.delete("all")
+
+    input_tab_entry.delete(0, tk.END)
+    input_tab_entry.insert(0, "10")
+
+    input_tab_entry2.delete(0, tk.END)
+    input_tab_entry2.insert(0, "2,5,4,7,1,3,8")
+
+    input_tab_entry3.delete(0, tk.END)
+    input_tab_entry3.insert(0, "5")
+
+    pop_entry.delete(0, tk.END)
+    pop_entry.insert(0, "50")
+
+    gen_entry.delete(0, tk.END)
+    gen_entry.insert(0, "200")
+
+    algorithm_var.set("Backtracking")
+    mutation_var.set("standard")
+    selection_var.set("top50")
+
+    culture_frame.grid_remove()
+
+    run_tab_label.config(text="Results will be provided here")
+    compare_tab_label.config(text="Compare results will be provided here")
+
+    for widget in plot_frame_tab.winfo_children():
+        widget.destroy()
+    tab.select(input_tab)
+
+
+reset_button = tk.Button(
+    buttons_frame,
+    text="Reset",
+    font=("Arial", 10, "bold"),
+    bg="#ff6b6b",
+    fg="white",
+    bd=0,
+    padx=10,
+    pady=5,
+    command=reset_app
+)
+reset_button.pack(side='left', padx=5)
+reset_button.bind("<Enter>", lambda e: reset_button.config(bg="#c0392b"))
+reset_button.bind("<Leave>", lambda e: reset_button.config(bg="#ff6b6b"))
+
 # =================== Plot ==================
 plot_frame_tab = tk.Frame(plot_tab, bg="#f0f4f7", bd=2, relief="solid")
 plot_frame_tab.pack(fill="both", expand=True, padx=10, pady=10)
 
-plot_button_compare = tk.Button(compare_tab, text="Show Plot", font=("Arial", 10, "bold"),
-                                bg="#00a6fb", fg="white", bd=0, padx=10, pady=5)
-plot_button_compare.pack(pady=10)
+plot_button_compare = tk.Button(
+    buttons_frame,
+    text="Show Plot",
+    font=("Arial", 10, "bold"),
+    bg="#00a6fb",
+    fg="white",
+    bd=0,
+    padx=10,
+    pady=5
+)
+plot_button_compare.pack(side='left', padx=5)
 plot_button_compare.bind("<Enter>", lambda e: on_enter(e, plot_button_compare))
 plot_button_compare.bind("<Leave>", lambda e: on_leave(e, plot_button_compare))
 
@@ -184,10 +243,6 @@ tk.Radiobutton(radio_frame, text="Backtracking", variable=algorithm_var, value="
 tk.Radiobutton(radio_frame, text="Culture", variable=algorithm_var, value="Culture",
                 bg="#f0f4f7", font=("Arial", 10), command=toggle_culture_inputs).pack(side='left')
 
-# =================== Buttons ===============================
-buttons_frame = tk.Frame(input_frame, bg="#f0f4f7")
-buttons_frame.grid(row=8, column=0, columnspan=2, pady=10)
-
 def on_enter(e, button):
     button['bg'] = '#0d3b66'
     button['fg'] = 'white'
@@ -196,15 +251,31 @@ def on_leave(e, button):
     button['bg'] = '#00a6fb'
     button['fg'] = 'white'
 
-compare_button = tk.Button(buttons_frame, text='Compare Algorithms', font=("Arial", 10, "bold"),
-                            bg="#00a6fb", fg="white", bd=0, padx=10, pady=5)
-compare_button.pack(side='left', padx=(0, 10))
+compare_button = tk.Button(
+    buttons_frame,
+    text='Compare Algorithms',
+    font=("Arial", 10, "bold"),
+    bg="#00a6fb",
+    fg="white",
+    bd=0,
+    padx=10,
+    pady=5
+)
+compare_button.pack(side='left', padx=5)
 compare_button.bind("<Enter>", lambda e: on_enter(e, compare_button))
 compare_button.bind("<Leave>", lambda e: on_leave(e, compare_button))
 
-start_button = tk.Button(buttons_frame, text="Start Packing", font=("Arial", 10, "bold"),
-                            bg="#00a6fb", fg="white", bd=0, padx=10, pady=5)
-start_button.pack(side='left')
+start_button = tk.Button(
+    buttons_frame,
+    text="Start Packing",
+    font=("Arial", 10, "bold"),
+    bg="#00a6fb",
+    fg="white",
+    bd=0,
+    padx=10,
+    pady=5
+)
+start_button.pack(side='left', padx=5)
 start_button.bind("<Enter>", lambda e: on_enter(e, start_button))
 start_button.bind("<Leave>", lambda e: on_leave(e, start_button))
 
