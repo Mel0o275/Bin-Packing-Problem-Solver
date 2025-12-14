@@ -3,6 +3,10 @@ from tkinter import ttk
 import bin
 # import BacktrackingMenna as bt
 # print(bin.cultural_algorithm([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 10))
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
+import time
+
 # ======================= Tkinter Setup ======================
 root = tk.Tk()
 root.title("Bin Packing")
@@ -11,9 +15,10 @@ root.configure(bg="#f0f4f7")
 root.resizable(False, False)
 screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
+
 # Make Window Centered
 window_width = 500
-window_height = 630
+window_height = 700
 x = (screen_width // 2) - (window_width // 2)
 y = (screen_height // 2) - (window_height // 2)
 root.geometry(f"{window_width}x{window_height}+{x}+{y}")
@@ -36,11 +41,12 @@ tab.pack(expand=True, fill='both', padx=10, pady=5)
 input_tab = ttk.Frame(tab)
 run_tab = ttk.Frame(tab)
 compare_tab = ttk.Frame(tab)
+plot_tab = ttk.Frame(tab)
 
 tab.add(input_tab, text='Inputs')
 tab.add(run_tab, text='Run')
 tab.add(compare_tab, text='Compare')
-
+tab.add(plot_tab, text='Plot')
 # ======================= Input Tab =========================
 input_frame = tk.Frame(input_tab, bg="#f0f4f7", bd=1, relief="solid")
 input_frame.pack(pady=10, padx=10, fill='x')
@@ -54,6 +60,48 @@ tk.Label(input_frame, text='Choose your Max Bins:', font=("Arial", 10, "bold"),
 tk.Label(input_frame, text='Choose your Algorithm:', font=("Arial", 10, "bold"),
             bg="#f0f4f7").grid(row=3, column=0, sticky='w', pady=5, padx=5)
 
+# =================== Culture Parameters ===================
+culture_frame = tk.Frame(input_frame, bg="#f0f4f7")
+culture_frame.grid(row=4, column=0, columnspan=2, sticky="w")
+culture_frame.grid_remove()
+
+tk.Label(culture_frame, text='Population Size:', font=("Arial", 10, "bold"),
+         bg="#f0f4f7").grid(row=0, column=0, sticky='w', pady=5, padx=5)
+pop_entry = tk.Entry(culture_frame, font=("Arial", 10), bd=2, relief="groove")
+pop_entry.grid(row=0, column=1, pady=5, padx=5)
+pop_entry.insert(0, "50")
+
+tk.Label(culture_frame, text='Generations:', font=("Arial", 10, "bold"),
+         bg="#f0f4f7").grid(row=1, column=0, sticky='w', pady=5, padx=5)
+gen_entry = tk.Entry(culture_frame, font=("Arial", 10), bd=2, relief="groove")
+gen_entry.grid(row=1, column=1, pady=5, padx=5)
+gen_entry.insert(0, "200")
+
+tk.Label(culture_frame, text='Mutation Type:', font=("Arial", 10, "bold"),
+         bg="#f0f4f7").grid(row=2, column=0, sticky='w', pady=5, padx=5)
+mutation_var = tk.StringVar(value="standard")
+mutation_frame = tk.Frame(culture_frame, bg="#f0f4f7")
+mutation_frame.grid(row=2, column=1, sticky='w')
+tk.Radiobutton(mutation_frame, text="Standard",
+               variable=mutation_var, value="standard",
+               bg="#f0f4f7").pack(side="left")
+tk.Radiobutton(mutation_frame, text="Inversion",
+               variable=mutation_var, value="inversion",
+               bg="#f0f4f7").pack(side="left", padx=10)
+
+tk.Label(culture_frame, text='Selection Type:', font=("Arial", 10, "bold"),
+         bg="#f0f4f7").grid(row=3, column=0, sticky='w', pady=5, padx=5)
+selection_var = tk.StringVar(value="top50")
+selection_frame = tk.Frame(culture_frame, bg="#f0f4f7")
+selection_frame.grid(row=3, column=1, sticky='w')
+tk.Radiobutton(selection_frame, text="Top 50%",
+               variable=selection_var, value="top50",
+               bg="#f0f4f7").pack(side="left")
+tk.Radiobutton(selection_frame, text="Tournament",
+               variable=selection_var, value="tournament",
+               bg="#f0f4f7").pack(side="left", padx=10)
+
+# =================== Input Entries ========================
 input_tab_entry = tk.Entry(input_frame, font=("Arial", 10), bd=2, relief="groove")
 input_tab_entry.grid(row=0, column=1, sticky='ew', pady=5, padx=5)
 input_tab_entry.insert(0, "10")
@@ -68,28 +116,85 @@ input_tab_entry3.insert(0, "5")
 
 input_frame.columnconfigure(1, weight=1)
 
+# =================== Algorithm Selection ==================
 algorithm_var = tk.StringVar(value="Backtracking")
 radio_frame = tk.Frame(input_frame, bg="#f0f4f7")
 radio_frame.grid(row=3, column=1, sticky='w', pady=5, padx=5)
 
+# =================== Plot ==================
+plot_frame_tab = tk.Frame(plot_tab, bg="#f0f4f7", bd=2, relief="solid")
+plot_frame_tab.pack(fill="both", expand=True, padx=10, pady=10)
+
+plot_button_compare = tk.Button(compare_tab, text="Show Plot", font=("Arial", 10, "bold"),
+                                bg="#00a6fb", fg="white", bd=0, padx=10, pady=5)
+plot_button_compare.pack(pady=10)
+plot_button_compare.bind("<Enter>", lambda e: on_enter(e, plot_button_compare))
+plot_button_compare.bind("<Leave>", lambda e: on_leave(e, plot_button_compare))
+
+def plot_in_plot_tab(history_best, history_avg):
+    for widget in plot_frame_tab.winfo_children():
+        if isinstance(widget, FigureCanvasTkAgg):
+            widget.get_tk_widget().destroy()
+
+    fig = Figure(figsize=(5, 3), dpi=100)
+    ax = fig.add_subplot(111)
+    ax.plot(history_best, label='Best Bins', color='red', linewidth=2)
+    ax.plot(history_avg, label='Avg Bins per Gen', color='black', linestyle='--', alpha=0.5)
+    ax.set_ylabel('Bins Used')
+    ax.set_xlabel('Generations')
+    ax.set_title('Cultural Algorithm Convergence')
+    ax.legend()
+    ax.grid(True)
+
+    canvas_plot = FigureCanvasTkAgg(fig, master=plot_frame_tab)
+    canvas_plot.draw()
+    canvas_plot.get_tk_widget().pack(fill='both', expand=True)
+
+
+def show_plot_compare():
+    if algorithm_var.get() != "Culture":
+        compare_tab_label.config(text="Plot is available only for Culture algorithm")
+        return
+
+    items_list = [int(x.strip()) for x in input_tab_entry2.get().split(',') if x.strip()]
+    bin_capacity = int(input_tab_entry.get())
+
+    best_sol, bins_used, hist_best, hist_avg = bin.cultural_algorithm(
+        items_list,
+        bin_capacity,
+        pop_size=int(pop_entry.get()),
+        generations=int(gen_entry.get()),
+        mutation_type=mutation_var.get(),
+        selection_type=selection_var.get()
+    )
+
+    plot_in_plot_tab(hist_best, hist_avg)
+    tab.select(plot_tab)
+
+
+plot_button_compare.config(command=show_plot_compare)
+def toggle_culture_inputs():
+    if algorithm_var.get() == "Culture":
+        culture_frame.grid()
+    else:
+        culture_frame.grid_remove()
+
 tk.Radiobutton(radio_frame, text="Backtracking", variable=algorithm_var, value="Backtracking",
-                bg="#f0f4f7", font=("Arial", 10)).pack(side='left', padx=(0, 10))
+                bg="#f0f4f7", font=("Arial", 10), command=toggle_culture_inputs).pack(side='left', padx=(0, 10))
 tk.Radiobutton(radio_frame, text="Culture", variable=algorithm_var, value="Culture",
-                bg="#f0f4f7", font=("Arial", 10)).pack(side='left')
+                bg="#f0f4f7", font=("Arial", 10), command=toggle_culture_inputs).pack(side='left')
 
+# =================== Buttons ===============================
 buttons_frame = tk.Frame(input_frame, bg="#f0f4f7")
-buttons_frame.grid(row=4, column=0, columnspan=2, pady=10)
-
+buttons_frame.grid(row=8, column=0, columnspan=2, pady=10)
 
 def on_enter(e, button):
     button['bg'] = '#0d3b66'
     button['fg'] = 'white'
 
-
 def on_leave(e, button):
     button['bg'] = '#00a6fb'
     button['fg'] = 'white'
-
 
 compare_button = tk.Button(buttons_frame, text='Compare Algorithms', font=("Arial", 10, "bold"),
                             bg="#00a6fb", fg="white", bd=0, padx=10, pady=5)
@@ -123,9 +228,17 @@ canvas.pack(side="left", fill="both", expand=True)
 
 v_scroll.config(command=canvas.yview)
 
-run_tab_label = tk.Label(run_tab, text='Results will be provided here',
-                            justify='left', font=("Arial", 10), bg="#f0f4f7")
-run_tab_label.pack(pady=5, padx=10, fill='x')
+run_tab_label = tk.Label(
+    run_tab,
+    text='Results will be provided here',
+    justify='left',
+    anchor='nw',
+    font=("Arial", 10),
+    bg="#f0f4f7",
+    wraplength=450
+)
+run_tab_label.pack(pady=5, padx=10, fill='both', expand=True)
+
 
 ITEM_COLORS = {
     1: "#FF6B6B", 2: "#4ECDC4", 3: "#45B7D1", 4: "#96CEB4",
@@ -175,8 +288,6 @@ def draw_items_sequential(x, y, width, height, items, capacity, bin_number, inde
 
     animate()
 
-
-
 # ======================= Backtracking Algorithm ========================
 
 def backtracking(index, current_bins):
@@ -217,9 +328,6 @@ backtracking_calls = 0
 best_bins = 10**9
 best_solution = []
 
-
-
-
 STATIC_DATA = {
     "Backtracking": {
         "bins": best_solution,
@@ -243,7 +351,6 @@ STATIC_DATA = {
     }
 }
 
-
 def backtracking_algorithm(itemsx, capacity):
     global best_bins, best_solution , items, bin_capacity, backtracking_calls
     best_bins = 10**9
@@ -262,22 +369,41 @@ def backtracking_algorithm(itemsx, capacity):
     # print(items)
     return STATIC_DATA["Backtracking"]
 
+def culture_algorithm(items, capacity, pop_size, generations, mutation_type, selection_type):
+    global bins_used, bins
 
-def culture_algorithm(items, capacity):
-    global bins_used , bins
-    best_sol, bins_used, bins, population = bin.cultural_algorithm(items, capacity)
-    _, bins = bin.evaluate(best_sol, capacity)    # Build final bin packing for display
-    # print(bins)
+    best_sol, bins_used, hist_best, hist_avg = bin.cultural_algorithm(
+        items,
+        capacity,
+        pop_size=pop_size,
+        generations=generations,
+        mutation_type=mutation_type,
+        selection_type=selection_type
+    )
+
+    _, bins = bin.evaluate(best_sol, capacity)
+
     STATIC_DATA["Culture"]["bins"] = bins
     STATIC_DATA["Culture"]["total_bins"] = bins_used
-    STATIC_DATA["Culture"]["population"] = population
+
     return STATIC_DATA["Culture"]
+
+def culture_wrapper(items, capacity):
+    return culture_algorithm(
+        items,
+        capacity,
+        int(pop_entry.get()),
+        int(gen_entry.get()),
+        mutation_var.get(),
+        selection_var.get()
+    )
 
 
 ALGORITHMS = {
     "Backtracking": backtracking_algorithm,
-    "Culture": culture_algorithm
+    "Culture": culture_wrapper
 }
+
 
 
 # ======================= Start Packing =====================
@@ -342,15 +468,25 @@ def start_packing():
         bbox = canvas.bbox("all")
         if bbox:
             canvas.config(scrollregion=(0, 0, bbox[2] + 50, bbox[3] + 50))
-
     result_text = (
         f"Bin Capacity: {bin_capacity}\n"
         f"Items: {items_list}\n"
         f"Algorithm Selected: {algorithm_name}\n"
         f"Bins Needed by Algorithm: {algorithm_data['total_bins']}\n"
         f"Displayed Bins: {len(bins)}\n"
-        f"Bin Contents: {bins}"
     )
+
+    if algorithm_name == "Culture":
+        result_text += (
+            f"\n--- Culture Algorithm Parameters ---"
+            f"\nPopulation Size: {pop_entry.get()}"
+            f"\nGenerations: {gen_entry.get()}"
+            f"\nMutation: {mutation_var.get()}"
+            f"\nSelection: {selection_var.get()}\n"
+        )
+
+    result_text += f"\nBin Contents:\n{bins}"
+
     run_tab_label.config(text=result_text)
     tab.select(run_tab)
 
@@ -361,13 +497,6 @@ start_button.config(command=start_packing)
 compare_tab_label = tk.Label(compare_tab, text='Compare results will be provided here',
                                 justify='left', font=("Arial", 10), bg="#f0f4f7")
 compare_tab_label.pack(pady=10, padx=10, fill='x')
-
-# ======================= Population Treeview =======================
-population_tree = ttk.Treeview(compare_tab, columns=("Solution"), show="headings", height=10)
-population_tree.heading("Solution", text="Culture Population Solutions")
-population_tree.column("Solution", width=450, anchor="w")
-population_tree.pack(pady=5, padx=10, fill='x')
-
 def compare_algo():
     bin_capacity = input_tab_entry.get()
     items = input_tab_entry2.get()
@@ -390,21 +519,22 @@ def compare_algo():
 
     bin_capacity = int(bin_capacity)
     compare_text = ""
-    population_tree.delete(*population_tree.get_children())  # نظف الـ Treeview قبل الإضافة
+    # population_tree.delete(*population_tree.get_children())  # نظف الـ Treeview قبل الإضافة
 
     for algo_name, algo_func in ALGORITHMS.items():
+        start_time = time.time()
         data = algo_func(items_list, bin_capacity)
+        end_time = time.time()
+        elapsed_time = end_time - start_time
         efficiency = (sum(sum(int(item) for item in bin) for bin in data['bins']) / (data['total_bins'] * bin_capacity)) * 100
         calls_info = f" (Backtracking calls: {data.get('calls', 0)})" if algo_name == "Backtracking" else ""
         compare_text += (
             f"{algo_name} Algorithm{calls_info}:\n"
             f"  - Bins Needed: {data['total_bins']}\n"
             f"  - Bin Contents: {[bin for bin in data['bins']]}\n"
-            f"  - Efficiency: {efficiency:.1f}%\n\n"
+            f"  - Efficiency: {efficiency:.1f}%\n"
+            f"  - Execution Time: {elapsed_time:.4f} seconds\n\n"
         )
-        if algo_name == "Culture" and "population" in data:
-            for idx, sol in enumerate(data["population"], 1):
-                population_tree.insert("", "end", values=[f"Solution {idx}: {sol}"])
     compare_tab_label.config(text=compare_text.strip())
     tab.select(compare_tab)
 
